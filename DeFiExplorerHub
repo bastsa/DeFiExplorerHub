@@ -1,0 +1,101 @@
+# DeFiExplorerHub.py
+
+from web3 import Web3
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import requests
+from typing import Dict, Any, List
+
+class DeFiExplorerHub:
+    def __init__(self, provider_url: str, api_url: str):
+        self.web3 = Web3(Web3.HTTPProvider(provider_url))
+        self.api_url = api_url
+        self.data = pd.DataFrame()
+
+    def fetch_protocol_data(self, protocol_name: str) -> Dict[str, Any]:
+        """
+        Fetch data from a DeFi protocol using its API.
+        """
+        response = requests.get(f"{self.api_url}/{protocol_name}")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response.raise_for_status()
+
+    def aggregate_data(self, protocols: List[str]):
+        """
+        Aggregate data from multiple DeFi protocols.
+        """
+        all_data = []
+        for protocol in protocols:
+            data = self.fetch_protocol_data(protocol)
+            all_data.append(data)
+        
+        self.data = pd.DataFrame(all_data)
+    
+    def analyze_protocol_performance(self):
+        """
+        Analyze the performance of aggregated DeFi protocols.
+        """
+        if self.data.empty:
+            raise ValueError("No data available for analysis.")
+        
+        performance = self.data.describe()
+        print("Protocol Performance Analysis:")
+        print(performance)
+
+    def plot_liquidity_distribution(self):
+        """
+        Plot the distribution of liquidity across protocols.
+        """
+        if self.data.empty:
+            raise ValueError("No data available for plotting.")
+        
+        plt.figure(figsize=(10, 6))
+        self.data['liquidity'].plot(kind='hist', bins=20, color='skyblue')
+        plt.xlabel('Liquidity')
+        plt.ylabel('Frequency')
+        plt.title('Liquidity Distribution Across Protocols')
+        plt.grid(True)
+        plt.show()
+
+    def generate_report(self) -> Dict[str, Any]:
+        """
+        Generate a comprehensive report on DeFi protocols.
+        """
+        if self.data.empty:
+            raise ValueError("No data available for reporting.")
+        
+        report = {
+            'total_protocols': len(self.data),
+            'average_liquidity': self.data['liquidity'].mean(),
+            'max_liquidity': self.data['liquidity'].max(),
+            'min_liquidity': self.data['liquidity'].min(),
+            'protocols': self.data['protocol_name'].tolist()
+        }
+        
+        return report
+
+# Example usage
+if __name__ == "__main__":
+    provider_url = 'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID'
+    api_url = 'https://api.example.com/defi'
+
+    defi_explorer = DeFiExplorerHub(provider_url, api_url)
+    
+    # Aggregate data from multiple DeFi protocols
+    protocols = ['uniswap', 'sushi', 'aave']
+    defi_explorer.aggregate_data(protocols)
+    
+    # Analyze protocol performance
+    defi_explorer.analyze_protocol_performance()
+    
+    # Plot liquidity distribution
+    defi_explorer.plot_liquidity_distribution()
+    
+    # Generate and print a report
+    report = defi_explorer.generate_report()
+    print("DeFi Report:")
+    for key, value in report.items():
+        print(f"{key}: {value}")
